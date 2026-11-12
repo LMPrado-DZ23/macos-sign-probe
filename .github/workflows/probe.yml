@@ -1,0 +1,42 @@
+name: macos probe
+
+# Prova de que macOS na nuvem está disponível para este harness: versão do sistema, Xcode,
+# ferramentas de assinatura e certificados. Nada é assinado aqui — é inventário.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  probe:
+    runs-on: macos-latest
+    steps:
+      - name: Sistema
+        run: |
+          sw_vers
+          uname -m
+
+      - name: Xcode
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Ferramentas de assinatura
+        run: |
+          which codesign security xcrun
+          codesign --version 2>&1 | head -2
+
+      - name: Identidades de assinatura presentes na máquina
+        run: |
+          security find-identity -v -p codesigning || echo "nenhuma identidade (esperado: runner limpo)"
+          ls ~/Library/MobileDevice/Provisioning\ Profiles 2>/dev/null || echo "nenhum provisioning profile (esperado)"
+
+      - name: Simuladores instalados
+        run: |
+          xcrun simctl list devices available | head -20
+
+      - name: Espaco e hardware
+        run: |
+          df -h /
+          sysctl -n hw.ncpu hw.memsize
